@@ -1,3 +1,4 @@
+import com.sun.source.tree.Tree
 import java.time.*
 import java.time.format.DateTimeFormatter
 
@@ -16,15 +17,25 @@ data class BranchNode(
         val propertyValue = inputs.getPropertyValue(propertyName)
         val nextNode = branches[propertyValue] ?: throw IllegalStateException("Invalid property value: $propertyValue")
 
-//      val nodelabel = nextNode.toString()
-//      if (nodelabel.contains(LEAF_NODE)){
-//           return finalizeTree(nextNode)
-//       }
+        val nodelabel = nextNode.toString()
+        if (nodelabel.startsWith(LEAF_NODE)){
+             return TreeResult(inputs.id, status = convertStringToVendorStatus(nodelabel))
+        }
+
         return nextNode.evaluate(inputs)
     }
 }
 
-data class LeafNode(val label: VendorSatus) : Node() {
+enum class VendorSatus {
+    DELIVERY_ONLINE, PICK_UP_ONLINE, PROGRAM_ORDER_OPENS_AT, OPENS_AT, CDU_DEFAULT, DINE_IN_ONLINE, PRE_ORDER_ONLINE, CLOSED_TEMPORARILY, WITHOUT_DELIVERY, OPEN_DEFAULT, CLOSED, CLOSED_DEFAULT
+}
+
+fun convertStringToVendorStatus(string: String):VendorSatus{
+    val vendorSatusToConvert = string.substringAfter("label=").substringBefore(")").trim()
+    return VendorSatus.valueOf(vendorSatusToConvert)
+}
+
+data class LeafNode(val label: VendorSatus) :Node () {
     override fun evaluate(inputs: LoaderDTO): TreeResult {
         return TreeResult(id = inputs.id, status = label)
     }
@@ -341,10 +352,6 @@ data class TreeResult(
 
 enum class OfferTypes {
     DELIVERY, PICK_UP, DINE_IN
-}
-
-enum class VendorSatus {
-    DELIVERY_ONLINE, PICK_UP_ONLINE, PROGRAM_ORDER_OPENS_AT, OPENS_AT, CDU_DEFAULT, DINE_IN_ONLINE, PRE_ORDER_ONLINE, CLOSED_TEMPORARILY, WITHOUT_DELIVERY, OPEN_DEFAULT, CLOSED, CLOSED_DEFAULT
 }
 
 fun main() {
