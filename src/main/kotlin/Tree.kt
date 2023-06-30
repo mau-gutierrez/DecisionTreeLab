@@ -1,6 +1,8 @@
 import java.time.*
 import java.time.format.DateTimeFormatter
 
+const val LEAF_NODE = "LeafNode"
+
 sealed class Node {
     abstract fun evaluate(inputs: LoaderDTO): TreeResult
 }
@@ -10,8 +12,14 @@ data class BranchNode(
 ) : Node() {
     override fun evaluate(inputs: LoaderDTO): TreeResult {
 
+
         val propertyValue = inputs.getPropertyValue(propertyName)
         val nextNode = branches[propertyValue] ?: throw IllegalStateException("Invalid property value: $propertyValue")
+
+//      val nodelabel = nextNode.toString()
+//      if (nodelabel.contains(LEAF_NODE)){
+//           return finalizeTree(nextNode)
+//       }
         return nextNode.evaluate(inputs)
     }
 }
@@ -87,44 +95,15 @@ class DecisionTree {
             )
         )
     )
+
     fun traverseTree(inputs: List<LoaderDTO>): List<TreeResult> {
         val treeResultsList = mutableListOf<TreeResult>()
-        inputs.forEach { input ->
-            var currentNode: Node = tree
-            var result: TreeResult? = null
-
-            while (result == null) {
-                val evaluationResult = currentNode.evaluate(input)
-
-                if (evaluationResult.status != VendorSatus.OPEN_DEFAULT) {
-                    result = evaluationResult
-                } else {
-                    val nextNode = when (currentNode) {
-                        is BranchNode -> currentNode.branches[evaluationResult.status == VendorSatus.PICK_UP_ONLINE]
-                        else -> null
-                    }
-
-                    if (nextNode == null) {
-                        result = evaluationResult
-                    } else {
-                        currentNode = nextNode
-                    }
-                }
-            }
-
-            treeResultsList.add(result)
+        inputs.forEach {
+            val treeResult = tree.evaluate(it)
+            treeResultsList.add(treeResult)
         }
-
         return treeResultsList
     }
-//    fun traverseTree(inputs: List<LoaderDTO>): List<TreeResult> {
-//        val treeResultsList = mutableListOf<TreeResult>()
-//        inputs.forEach {
-//            val treeResult = tree.evaluate(it)
-//            treeResultsList.add(treeResult)
-//        }
-//        return treeResultsList
-//    }
 }
 
 data class LoaderDTO(
